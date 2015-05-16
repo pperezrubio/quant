@@ -33,12 +33,17 @@ def trim_raw(file_path):
 def _dt_to_str_timestamp(dt):
     return str(int(time.mktime(dt.timetuple())))
 
-if __name__ == '__main__':
-    example_file = '15-05-13-KO-1'
-    buff = trim_raw(example_file)
+def load_raw_dataframe(file_path):
+    buff = trim_raw(file_path)
     import pandas as pd
     csv = StringIO(buff)
-    pd.DataFrame.from_csv(csv)
-    print pd
+    df = pd.DataFrame.from_csv(csv)
+    df.index = pd.to_datetime(df.index, utc=True, unit='s')
+    return df
+
+if __name__ == '__main__':
+    example_file = '15-05-13-KO-1'
+    test = load_raw_dataframe(example_file)
+    print test
     from IPython import embed
     embed()
