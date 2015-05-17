@@ -11,10 +11,18 @@ from google_minute import load_raw_dataframe
 
 class TempCSVDataSource(DataSource):
     def __init__(self, **kwargs):
-        self.stocks = kwargs.get('stocks')
+
+        self.arg_string = hash_args('TempCSVDataSource', **kwargs)
+
+        self.sids = kwargs.get('stocks')
         self.start = kwargs.get('start')
         self.end = kwargs.get('end')
         self._raw_data = None
+
+
+    @property
+    def instance_hash(self):
+        return self.arg_string
 
     @property
     def mapping(self):
@@ -28,8 +36,8 @@ class TempCSVDataSource(DataSource):
     def raw_data_gen(self):
         syms = ['KO', 'PEP']
         for sym in syms:
-            file_name = filter(lambda x: re.compile(sym), os.listdir('.'))
-            df = load_raw_dataframe(file_name)
+            file_name = filter(lambda x: re.match(re.compile(sym), x), os.listdir('.'))
+            df = load_raw_dataframe(file_name[0])
             for index, row in df.iterrows():
                 event = {
                     'dt': index,
@@ -37,7 +45,7 @@ class TempCSVDataSource(DataSource):
                     'price': row['CLOSE'],
                     'volume': row['VOLUME'],
                     }
-                    yield event
+                yield event
 
     @property
     def raw_data(self):
