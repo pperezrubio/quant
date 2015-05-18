@@ -5,7 +5,7 @@ from zipline.sources.simulated import RandomWalkSource
 from datetime import datetime
 import pytz
 
-import pylab as pl
+import matplotlib.pyplot as plt
 import numpy as np
 
 from csv_file_datasource import TempCSVDataSource
@@ -15,16 +15,19 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
-    sym = 'KO'
-    order_target(sym, 100)
+    order_target('KO', 100)
+    order_target('PEP', 100)
 
-    record(stock=data[symbol(sym)].price)
+    record(
+        ko=data[symbol('KO')].price,
+        pep=data['PEP'].price
+        )
 
 if __name__ == '__main__':
     start = datetime(2015,5,7,0,0,0,0, pytz.utc)
     end = datetime(2015,5,16,0,0,0,0, pytz.utc)
-    data = TempCSVDataSource(stocks=['KO'], start=start, end=end)
+    data = TempCSVDataSource(stocks=['KO', 'PEP'], start=start, end=end)
     algo = TradingAlgorithm(handle_data=handle_data, initialize=initialize)
     results = algo.run(data)
-    results.portfolio_value.plot()
-    pl.show()
+    from IPython import embed
+    embed()
