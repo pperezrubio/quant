@@ -17,6 +17,8 @@ class TempCSVDataSource(DataSource):
         self.sids = kwargs.get('stocks')
         self.start = kwargs.get('start')
         self.end = kwargs.get('end')
+
+        self.started_sids = set()
         self._raw_data = None
 
 
@@ -33,17 +35,24 @@ class TempCSVDataSource(DataSource):
             'volume': (int, 'volume'),
         }
 
+    def _sym_to_df(self, sym):
+        file_name = filter(lambda x: re.match(re.compile(sym), x), os.listdir('.'))
+        df = load_raw_dataframe(file_name[0])
+        return df
+
     def raw_data_gen(self):
-        syms = ['KO', 'PEP']
-        for sym in syms:
-            file_name = filter(lambda x: re.match(re.compile(sym), x), os.listdir('.'))
-            df = load_raw_dataframe(file_name[0])
-            for index, row in df.iterrows():
+        #CONTINUE: need to yield sids per index
+        syms = ['PEP', 'KO']
+        arr = map(self._sym_to_df, syms)
+        df = pd.concat(arr, axis=1, keys=syms)
+        for index, row in df.iterrows():
+            for sym in syms:
                 event = {
                     'dt': index,
                     'sid': sym,
-                    'price': row['CLOSE'],
-                    'volume': row['VOLUME'],
+                    'price': row[sym]['CLOSE'],
+                    'volume': 1e9,
+                    #'volume': row[sym]['VOLUME'],
                     }
                 yield event
 
