@@ -51,11 +51,10 @@ class KalmanFilterPair:
         x_delta = z - self.H * x_predicted                              # 1
         P_delta = self.H * P_predicted * np.transpose(self.H) + self.R  # 1
         # Update
-        K = P_predicted * np.transpose(self.H) / P_delta                # 2x1
+        K = P_predicted * np.transpose(self.H) * np.linalg.inv(P_delta) # 2x1
         self.x = x_predicted + K * x_delta                              # 2x1
 
         I = np.eye(self.x.shape[0])
         self.P = (I - K * self.H) * P_predicted                         # 2x2
         # return spread
-        err = z - x_delta
-        return err, P_delta
+        return x_delta, P_delta
