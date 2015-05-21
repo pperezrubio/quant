@@ -28,6 +28,9 @@ def initialize(context):
     context.price_b = []
     context.err = []
     context.sqrt_q = []
+    context.pair = []
+    context.hedge_ratio = []
+    context.intercept = []
 
 def handle_data(context, data):
     price_a = data['KO'].price
@@ -41,6 +44,11 @@ def handle_data(context, data):
     context.price_b.append(price_b)
     context.err.append(err[0,0])
     context.sqrt_q.append(np.sqrt(np.abs(q[0,0])))
+
+    hedge_ratio = -1 / context.kalman_filter.x[0][0,0]
+    context.hedge_ratio.append(hedge_ratio)
+    context.intercept.append(context.kalman_filter.x[1][0,0])
+    context.pair.append(price_a + price_b * hedge_ratio)
 
 if __name__ == '__main__':
     start = datetime(2015, 5, 14, 3, 31, 0, 0, pytz.utc)
@@ -64,6 +72,9 @@ if __name__ == '__main__':
     err = algo.err[i_start:]
     sqrt_q = algo.sqrt_q[i_start:]
 
+    #from IPython import embed
+    #embed()
+
     import pylab
     pylab.plot(
             range(len(err)), err, 'r',
@@ -74,4 +85,39 @@ if __name__ == '__main__':
     pylab.ylabel('Spread')
     pylab.title('Kalman Filter Test')
     pylab.legend(('err', 'upper_q', 'lower_q'))
+
+    pylab.figure()
+    pylab.plot(range(len(price_a)), price_a, 'r')
+    pylab.xlabel('Time')
+    pylab.ylabel('$')
+    pylab.title('Price A')
+
+    pylab.figure()
+    pylab.plot(range(len(price_a)), price_b, 'g')
+    pylab.xlabel('Time')
+    pylab.ylabel('$')
+    pylab.title('Price B')
+
+    pylab.figure()
+    pylab.plot(range(len(err)), algo.pair[i_start:], 'b')
+    pylab.xlabel('Time')
+    pylab.ylabel('$')
+    pylab.title('Artificial Stationary Price')
+
+    pylab.figure()
+    pylab.plot(
+            range(len(price_a)), algo.hedge_ratio, 'r',
+            )
+    pylab.xlabel('Time')
+    pylab.ylabel('Hedge Ratio')
+    pylab.title('Kalman Filter Test')
+
+    pylab.figure()
+    pylab.plot(
+            range(len(price_a)), algo.intercept, 'g',
+            )
+    pylab.xlabel('Time')
+    pylab.ylabel('Intercept')
+    pylab.title('Kalman Filter Test')
+
     pylab.show()
