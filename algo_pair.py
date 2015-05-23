@@ -10,7 +10,12 @@ from csv_file_datasource import TempCSVDataSource
 
 from engg.kalman_filter import KalmanFilterPair2
 
+class Storage:
+    pass
+
 def initialize(context):
+    context.sym_a = 'KO'
+    context.sym_b = 'PEP'
     Vw = 0.00001
     Ve = 0.001
     A = np.eye(2)
@@ -22,34 +27,63 @@ def initialize(context):
     P = 0 * np.eye(2)
 
     context.kalman_filter = KalmanFilterPair2(A, B, H, x, P, Q, R)
+    context.target_position = None
+    context.current_position = None
 
     # storage
-    context.price_a = []
-    context.price_b = []
-    context.err = []
-    context.sqrt_q = []
-    context.pair = []
-    context.hedge_ratio = []
-    context.intercept = []
+    context.storage = Storage()
+    context.storage.price_a = []
+    context.storage.price_b = []
+    context.storage.err = []
+    context.storage.sqrt_q = []
+    context.storage.pair = []
+    context.storage.hedge_ratio = []
+    context.storage.intercept = []
 
 def handle_data(context, data):
-    price_a = data['KO'].price
-    price_b = data['PEP'].price
+    price_a = data[context.sym_a].price
+    price_b = data[context.sym_b].price
     if np.isnan(price_b) or np.isnan(price_a):
         return
     rtn_val = context.kalman_filter.step(price_b, price_a)
     err = rtn_val.err
     sd = rtn_val.sd
 
-    context.price_a.append(price_a)
-    context.price_b.append(price_b)
-    context.err.append(err)
-    context.sqrt_q.append(sd)
+    context.storage.price_a.append(price_a)
+    context.storage.price_b.append(price_b)
+    context.storage.err.append(err)
+    context.storage.sqrt_q.append(sd)
 
     hedge_ratio = context.kalman_filter.get_hedge_ratio()
-    context.hedge_ratio.append(hedge_ratio)
-    context.intercept.append(context.kalman_filter.get_x1())
-    context.pair.append(price_a + price_b * hedge_ratio)
+    context.storage.hedge_ratio.append(hedge_ratio)
+    context.storage.intercept.append(context.kalman_filter.get_x1())
+    context.storage.pair.append(price_a + price_b * hedge_ratio)
+
+    # Determine Position
+    if err < -sd:
+        context.target_position = 'long'
+    elif err > sd:
+        context.target_position = 'short'
+    else:
+        context.target_position = 'exit'
+
+    num_shares = 1000
+    # Order
+    if context.current_position != context.target_position:
+        if context.target_position == 'long':
+            context.order(context.sym_a, num_shares)
+            context.order(context.sym_b, hedge_ratio * num_shares)
+            context.current_position = 'long'
+
+        elif context.target_position == 'short':
+            context.order(context.sym_a, -num_shares)
+            context.order(context.sym_b, hedge_ratio * -num_shares)
+            context.current_position = 'short'
+
+        elif context.target_position == 'exit':
+            context.order_target(context.sym_a, 0)
+            context.order_target(context.sym_b, 0)
+            context.current_position = 'exit'
 
 if __name__ == '__main__':
     start = datetime(2015, 5, 14, 3, 31, 0, 0, pytz.utc)
@@ -68,13 +102,13 @@ if __name__ == '__main__':
     results = algo.run(data)
 
     i_start = 20
-    price_a = algo.price_a
-    price_b = algo.price_b
-    err = algo.err[i_start:]
-    sqrt_q = algo.sqrt_q[i_start:]
+    price_a = algo.storage.price_a
+    price_b = algo.storage.price_b
+    err = algo.storage.err[i_start:]
+    sqrt_q = algo.storage.sqrt_q[i_start:]
 
-    #from IPython import embed
-    #embed()
+    from IPython import embed
+    embed()
 
     import pylab
     pylab.plot(
@@ -100,14 +134,14 @@ if __name__ == '__main__':
     pylab.title('Price B')
 
     pylab.figure()
-    pylab.plot(range(len(err)), algo.pair[i_start:], 'b')
+    pylab.plot(range(len(err)), algo.storage.pair[i_start:], 'b')
     pylab.xlabel('Time')
     pylab.ylabel('$')
     pylab.title('Artificial Stationary Price')
 
     pylab.figure()
     pylab.plot(
-            range(len(price_a)), algo.hedge_ratio, 'r',
+            range(len(price_a)), algo.storage.hedge_ratio, 'r',
             )
     pylab.xlabel('Time')
     pylab.ylabel('Hedge Ratio')
@@ -115,7 +149,7 @@ if __name__ == '__main__':
 
     pylab.figure()
     pylab.plot(
-            range(len(price_a)), algo.intercept, 'g',
+            range(len(price_a)), algo.storage.intercept, 'g',
             )
     pylab.xlabel('Time')
     pylab.ylabel('Intercept')
