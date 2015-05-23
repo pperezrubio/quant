@@ -8,7 +8,7 @@ import numpy as np
 
 from csv_file_datasource import TempCSVDataSource
 
-from engg.kalman_filter import KalmanFilterPair
+from engg.kalman_filter import KalmanFilterPair2
 
 def initialize(context):
     Vw = 0.00001
@@ -21,7 +21,7 @@ def initialize(context):
     x = np.matrix([[0],[0]])
     P = 0 * np.eye(2)
 
-    context.kalman_filter = KalmanFilterPair(A, B, H, x, P, Q, R)
+    context.kalman_filter = KalmanFilterPair2(A, B, H, x, P, Q, R)
 
     # storage
     context.price_a = []
@@ -37,17 +37,18 @@ def handle_data(context, data):
     price_b = data['PEP'].price
     if np.isnan(price_b) or np.isnan(price_a):
         return
-    err, q = context.kalman_filter.step(
-            np.matrix([price_b]), np.matrix([price_a, 1.0]))
+    rtn_val = context.kalman_filter.step(price_b, price_a)
+    err = rtn_val.err
+    sd = rtn_val.sd
 
     context.price_a.append(price_a)
     context.price_b.append(price_b)
-    context.err.append(err[0,0])
-    context.sqrt_q.append(np.sqrt(np.abs(q[0,0])))
+    context.err.append(err)
+    context.sqrt_q.append(sd)
 
-    hedge_ratio = -1 / context.kalman_filter.x[0][0,0]
+    hedge_ratio = context.kalman_filter.get_hedge_ratio()
     context.hedge_ratio.append(hedge_ratio)
-    context.intercept.append(context.kalman_filter.x[1][0,0])
+    context.intercept.append(context.kalman_filter.get_x1())
     context.pair.append(price_a + price_b * hedge_ratio)
 
 if __name__ == '__main__':
