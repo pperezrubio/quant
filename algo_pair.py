@@ -92,7 +92,10 @@ if __name__ == '__main__':
     data = TempCSVDataSource(stocks=['KO', 'PEP'], start=start, end=end)
 
     sim_params = create_simulation_parameters(
-        start=start, end=end, capital_base=5000, data_frequency='minute')
+        start=start, end=end, capital_base=5000,
+        data_frequency='minute',
+        emission_rate='minute'
+        )
 
     algo = TradingAlgorithm(
             handle_data=handle_data,
@@ -106,9 +109,6 @@ if __name__ == '__main__':
     price_b = algo.storage.price_b
     err = algo.storage.err[i_start:]
     sqrt_q = algo.storage.sqrt_q[i_start:]
-
-    from IPython import embed
-    embed()
 
     import pylab
     pylab.plot(
