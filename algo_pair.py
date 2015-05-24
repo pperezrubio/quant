@@ -16,7 +16,7 @@ class Storage:
 def initialize(context):
     context.sym_a = 'KO'
     context.sym_b = 'PEP'
-    Vw = 0.00001
+    Vw = 0.000001
     Ve = 0.001
     A = np.eye(2)
     B = 0 * np.eye(2)
@@ -87,7 +87,8 @@ def handle_data(context, data):
 
 if __name__ == '__main__':
     start = datetime(2015, 5, 14, 3, 31, 0, 0, pytz.utc)
-    end = datetime(2015, 5, 15, 9, 59, 0, 0, pytz.utc)
+    end = datetime(2015, 5, 14, 4, 31, 0, 0, pytz.utc)
+    #end = datetime(2015, 5, 15, 9, 59, 0, 0, pytz.utc)
 
     data = TempCSVDataSource(stocks=['KO', 'PEP'], start=start, end=end)
 
@@ -109,6 +110,9 @@ if __name__ == '__main__':
     price_b = algo.storage.price_b
     err = algo.storage.err[i_start:]
     sqrt_q = algo.storage.sqrt_q[i_start:]
+
+    #from IPython import embed
+    #embed()
 
     import pylab
     pylab.plot(
