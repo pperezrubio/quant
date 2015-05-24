@@ -40,12 +40,20 @@ class TempCSVDataSource(DataSource):
         df = load_raw_dataframe(file_name[0])
         return df
 
+    def _df_within_start_end(self, df):
+        # may need pytz here
+        df['dt_dt'] = map(lambda x: x.to_datetime(), df.index)
+        idx = (df['dt_dt'] > self.start) & (df['dt_dt'] < self.end)
+        return df[idx]
+
     def raw_data_gen(self):
-        #CONTINUE: need to yield sids per index
         syms = ['PEP', 'KO']
         arr = map(self._sym_to_df, syms)
         df = pd.concat(arr, axis=1, keys=syms)
-        for index, row in df.iterrows():
+
+        df_filtered = self._df_within_start_end(df)
+
+        for index, row in df_filtered.iterrows():
             for sym in syms:
                 event = {
                     'dt': index,
