@@ -1,0 +1,3 @@
+[submodule "quant-data"]
+	path = quant-data
+	url = git@github.com:ryanzyy/quant-data.git

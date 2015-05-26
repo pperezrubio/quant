@@ -58,7 +58,7 @@ class TempDataSource(DataSource):
         return df[idx]
 
     def raw_data_gen(self):
-        mat_file = loadmat('test.mat')
+        mat_file = loadmat('quant-data/inputDataOHLCDaily_20120511.mat')
         sym = 'TU'
         index = _filter_sym('TU', mat_file['syms'])
         cl = _get_data(index, mat_file['cl'])
