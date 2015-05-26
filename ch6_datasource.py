@@ -1,6 +1,7 @@
 import os
 import re
 from datetime import datetime
+import pytz
 
 import numpy as np
 import pandas as pd
@@ -21,7 +22,8 @@ def _get_data(index,cell):
 
 def _parse_datetime(fvalue):
     str_date = str(fvalue)[:8]
-    return datetime.strptime(str_date, '%Y%m%d')
+    dt_unaware = datetime.strptime(str_date, '%Y%m%d')
+    return pytz.utc.localize(dt_unaware)
 
 class TempDataSource(DataSource):
     def __init__(self, **kwargs):
