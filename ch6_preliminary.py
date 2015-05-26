@@ -6,6 +6,7 @@ import pytz
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat
+from scipy.stats import pearsonr
 
 from IPython import embed
 
@@ -22,7 +23,11 @@ def load_timeseries():
 
 def get_return(s1, s2):
     ret = (s1 - s2) / s2
-    return ret.dropna()
+    return ret
+
+def exclude_nan(s1, s2):
+    i_nan = np.isnan(s1) | np.isnan(s2)
+    return s1[~i_nan], s2[~i_nan]
 
 if __name__ == '__main__':
     s = load_timeseries()
@@ -32,5 +37,11 @@ if __name__ == '__main__':
     ret_lag = get_return(s, s.shift(-lookback))
     ret_fut = get_return(s.shift(holddays), s)
 
-    res = np.corrcoef(ret_lag.values, ret_fut.values)
-    embed()
+    s1, s2 = exclude_nan(ret_lag, ret_fut)
+    if lookback >= holddays:
+        ind = np.arange(0, len(s1) - 1, holddays)
+    else:
+        ind = np.arange(0, len(s1) - 1, lookback)
+
+    corr, p_value = pearsonr(s1[ind], s2[ind])
+    print "%d %d %f %f" % (lookback, holddays, corr, p_value)
