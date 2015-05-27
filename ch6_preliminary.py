@@ -34,8 +34,8 @@ if __name__ == '__main__':
     lookback = 40
     holddays = 20
 
-    ret_lag = get_return(s, s.shift(-lookback))
-    ret_fut = get_return(s.shift(holddays), s)
+    ret_lag = get_return(s, s.shift(lookback))
+    ret_fut = get_return(s.shift(-holddays), s)
 
     s1, s2 = exclude_nan(ret_lag, ret_fut)
     if lookback >= holddays:
@@ -45,3 +45,4 @@ if __name__ == '__main__':
 
     corr, p_value = pearsonr(s1[ind], s2[ind])
     print "%d %d %f %f" % (lookback, holddays, corr, p_value)
+    embed()
