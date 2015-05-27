@@ -31,18 +31,31 @@ def exclude_nan(s1, s2):
 
 if __name__ == '__main__':
     s = load_timeseries()
-    lookback = 40
-    holddays = 20
+    lags = [1, 5, 10, 25, 60, 120, 250]
+    leads = [1, 5, 10, 25, 60, 120, 250]
+    res = []
+    for lookback in lags:
+        for holddays in leads:
+            # lag: 2 days
+            # return lag: (p[2] - p[0]) / p[0] ; i~2
+            ret_lag = get_return(s, s.shift(lookback))
+            # lead: 3 days
+            # return fut: (p[3] - p[0]) / p[0] ; i~3
+            ret_fut = get_return(s.shift(-holddays), s)
 
-    ret_lag = get_return(s, s.shift(lookback))
-    ret_fut = get_return(s.shift(-holddays), s)
+            s1, s2 = exclude_nan(ret_lag, ret_fut)
+            if lookback >= holddays:
+                ind = np.arange(0, len(s1) - 1, holddays)
+            else:
+                ind = np.arange(0, len(s1) - 1, lookback)
 
-    s1, s2 = exclude_nan(ret_lag, ret_fut)
-    if lookback >= holddays:
-        ind = np.arange(0, len(s1) - 1, holddays)
-    else:
-        ind = np.arange(0, len(s1) - 1, lookback)
+            corr, p_value = pearsonr(s1[ind], s2[ind])
+            # print "%d %d %f %f" % (lookback, holddays, corr, p_value)
+            res.append([lookback, holddays, corr, p_value])
 
-    corr, p_value = pearsonr(s1[ind], s2[ind])
-    print "%d %d %f %f" % (lookback, holddays, corr, p_value)
-    embed()
+    from texttable import Texttable
+    table = Texttable()
+    table.header(['lookback', 'holddays', 'corr', 'p_value'])
+    table.set_cols_align(['l', 'l', 'm', 'm'])
+    table.add_rows(res, False)
+    print table.draw()
